@@ -120,7 +120,6 @@ class IvavAgeVerify
 
         if ($userId > 0)
         {
-
             update_user_meta($userId, 'ivav-guid',        $this->guid);
             update_user_meta($userId, 'ivav-guid-tmp',    $this->guidTmp);
             update_user_meta($userId, 'ivav-age',         $this->age);
