@@ -9,13 +9,12 @@ trait IvavEmailTrait {
         return $email_classes;
     }
 
-    public function ivav_send_reminder($email, $guid, $orderId = null)
+    public function ivav_send_reminder($email, $guid, $orderId)
     {
         if ($email == '' || $guid == '' || $guid == 'manual') return;
 
         if (in_array($this->siteKey, ['ca15f8bc2637626660651c02bd2f9c17', '5665acdd9a7d7d88cf16ac72bfb3bd65'])) {
 
-            $this->logger->debug('IV-AV: ivav_send_reminder custom logic');
             $order = new WC_Order($orderId);
             $status = $order->get_status();
             if (!in_array($status, array('pending-age', 'onhold-age'))) {

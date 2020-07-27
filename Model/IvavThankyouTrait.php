@@ -33,23 +33,11 @@ trait IvavThankyouTrait {
 
             $ip        = get_post_meta($orderId, '_customer_ip_address', true );
             $r         = $this->ivav_api_create($orderId, $ip, 'thankyou', $tmpGuid, $data);
-#error_log('IV-AV ivav_thankyou: api create returned r: [' . print_r($r,TRUE) . ']');
             $guid      = $r['request_guid'];
             $iframeUrl = $r['iframeurl'];
 
-
-
- # BF-CUSTOM: Set the template Theme at the end of the URL
-            $templateTheme = apply_filters('ivav_template_theme', $this->templateTheme);
-            if ($templateTheme != '') {
-                $iframeUrl .= '/' . $templateTheme;
-                # error_log('IV-AV: thankyou Templated iframe URL: ' . $iframeUrl);
-            }
-# /BF-CUSTOM
-
             $av->guidTmp = $guid;
             $av->save($userId, $orderId);
-#error_log('IV-AV: save thankyou tmpGUID');
         }
 
         // schedule reminder email
@@ -112,7 +100,7 @@ trait IvavThankyouTrait {
 
                 $av->guidTmp = $guid;
                 $av->save($userId, $orderId);
-# error_log('IV-AV: ThankYou Save');
+
                 echo "
         You must verify your age to complete the order.  <a href='$iframeUrl'>Please click here to verify your age.</a>
                 ";
@@ -169,7 +157,6 @@ trait IvavThankyouTrait {
     {
         $skip = $_POST['ivav-skip'];
         if ($skip != '') {
-            $this->logger->info('IV-AV: order_processed_skip found skip variable');
             update_post_meta($orderId, 'ivav-skip', $skip);
         }
     }

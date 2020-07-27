@@ -1,14 +1,14 @@
 <?php
 /**
  * @package AgeVerify by Inverite
- * @version 2.1.3
+ * @version 2.1.5
  */
 /*
 Plugin Name: AgeVerify by Inverite
 Plugin URI: https://www.inverite.com/age_verify
 Description: AgeVerify quickly and conveniently verifies the age of your Canadian customers - keeping you safe from transactions with minors.
-Author: Lloyd Evetts
-Version: 2.1.3+bf2
+Author: Inverite Verification Inc
+Version: 2.1.5
 Author URI: http://www.inverite.com/
 */
 

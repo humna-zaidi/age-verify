@@ -6,6 +6,8 @@ trait IvavAdminTrait {
         $userId = $order->get_user_id();
         $orderId = ($this->ivav_version_check(2.7)) ? $orderId = $order->get_id() : $order->id;
         IvavAgeVerify::verify($userId, $orderId);
+        $order->add_order_note('AgeVerify by Inverite: Manually verified');
+        do_action('ivav_verification', $userId, $orderId, 'Approved', 'Manual Verification from order ID ' . $orderId);
     }
 
     public function ivav_wc_order_manual_clear_action($order)
@@ -13,6 +15,8 @@ trait IvavAdminTrait {
         $userId = $order->get_user_id();
         $orderId = ($this->ivav_version_check(2.7)) ? $orderId = $order->get_id() : $order->id;
         IvavAgeVerify::clear($userId, $orderId);
+        $order->add_order_note('AgeVerify by Inverite: age verification manually cleared.');
+        do_action('ivav_verification', $userId, $orderId, 'Failed', 'Manual Verification Clear from order ID ' . $orderId);
     }
 
     public function ivav_register_bulk_verify($actions)
@@ -112,18 +116,13 @@ trait IvavAdminTrait {
         return $newColumns;
     }
 
-    public function ivav_shop_order_posts_custom_column($column)
+    public function ivav_shop_order_posts_custom_column($column, $post_id)
     {
-        global $post, $woocommerce, $the_order;
-
-
-        if ( empty( $the_order ) || $the_order->id != $post->ID ) {
-            $the_order = new WC_Order( $post->ID );
-        }
+        $the_order = wc_get_order($post_id);
 
         if ($column == 'ageVerify') {
             $userId  = $the_order->get_user_id();
-            $orderId = $post->ID;
+            $orderId = $the_order->get_id();
             $class = 'dashicons-no';
             $color = 'black';
             $title   = 'Age unverified';
@@ -137,11 +136,11 @@ trait IvavAdminTrait {
                     $title .= ' Manually';
                 }
                 else {
-                    if (in_array($this->forceName, ['shipping', 'both']) && !$av->isNameMatch($the_order->shipping_first_name, $the_order->shipping_last_name)) {
+                    if (in_array($this->forceName, ['shipping', 'both']) && !$av->isNameMatch($the_order->get_shipping_first_name(), $the_order->get_shipping_last_name())) {
                         $color = 'orange';
                         $title .= ' - Name Mismatch';
                     }
-                    if (in_array($this->forceName, ['billing', 'both']) && !$av->isNameMatch($the_order->billing_first_name, $the_order->billing_last_name)) {
+                    if (in_array($this->forceName, ['billing', 'both']) && !$av->isNameMatch($the_order->get_billing_first_name(), $the_order->get_billing_last_name())) {
                         $color = 'orange';
                         $title .= ' - Name Mismatch';
                     }
