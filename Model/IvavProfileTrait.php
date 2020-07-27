@@ -3,10 +3,44 @@ trait IvavProfileTrait {
 
     public function ivav_profile_shortcode($attributes, $content = null)
     {
-# error_log('IV-AV: ivav_profile_shortcode attributes: [' . print_r($attributes,TRUE) . '], content: [' . $content . ']');
         $this->ivav_setup_js_internal();
 
         return $this->ivav_edit_profile_action($attributes);
+    }
+
+    public function ivav_iframe_shortcode($attributes, $content = null)
+    {
+        $this->ivav_setup_js_internal();
+
+        $userId    = get_current_user_id();
+        $av = IvavAgeVerify::load($userId, null);
+
+        if ($av->isVerified == true) {
+           return "";
+        }
+
+        $ip     = $_SERVER['REMOTE_ADDR'];
+        $user = wp_get_current_user();
+        $data = [];
+        if ($user !== null) {
+            $data['firstname'] = $user->first_name;
+            $data['lastname']  = $user->last_name;
+        }
+        $r    = $this->ivav_api_create($userId, $ip, 'profile', $av->guidTmp, $data);
+        $guid = $r['request_guid'];
+        if ($userId > 0 && $guid != $av->guidTmp) {
+            $av->guidTmp = $guid;
+            $av->save($userId);
+        }
+
+        $this->iframe = $r['iframeurl'];
+        $iframe = "<iframe src='" . $r['iframeurl'] . "'";
+        foreach ($attributes as $k => $v) {
+            $iframe = $iframe . " $k='$v'";
+        }
+        $iframe = $iframe . ">";
+
+        return $iframe;
     }
 
     public function ivav_wc_edit_account_form()
@@ -52,31 +86,13 @@ trait IvavProfileTrait {
                 $data['lastname']  = $user->last_name;
             }
             $r    = $this->ivav_api_create($userId, $ip, 'profile', $av->guidTmp, $data);
-            error_log('IV-AV ivav_profile: api create returned r: [' . print_r($r,TRUE) . ']');
             $guid = $r['request_guid'];
             if ($userId > 0 && $guid != $av->guidTmp) {
                 $av->guidTmp = $guid;
-#error_log('IV-AV: edit profile save');
                 $av->save($userId);
             }
 
-            // schedule reminder email
-            if ($this->reminderDelay > 0) {
-                $user = wp_get_current_user();
-                // need to prevent duplicate emails here!
-                wp_schedule_single_event(time() + $this->reminderDelay, 'ivav_send_reminder', array($user->user_email, $guid));
-            }
-
             $this->iframe = $r['iframeurl'];
-            $templateTheme = apply_filters('ivav_template_theme', $this->templateTheme);
-
-# BF-CUSTOM: Set the template Theme at the end of the URL
-            if ($templateTheme != '') {
-                $this->iframe .= '/' . $templateTheme;
-#error_log('IV-AV: profile Templated iframe URL: ' . $this->iframe);
-            }
-# /BF-CUSTOM
-
             $customerMessage = $this->customerMessage;
             if ($this->thankyouInline == 'inline') {
                 $msg = "
@@ -88,9 +104,9 @@ trait IvavProfileTrait {
                     $description = "<a href='#' style='cursor: pointer;' onclick='return showPopup(\"$this->iframe\")'>{$attributes[unverified]}</a>";
                 }
 
-                $msg = "<div id='ageVerifyMessage'>
+                $msg = "
                 <p><span style='color: red;' class='dashicons dashicons-warning'></span>$description</p>
-                </div>";
+                ";
             }
         }
 

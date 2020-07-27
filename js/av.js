@@ -13,13 +13,7 @@ if ( ! window.console ) console = { log: function(){} };
 
 function checkoutListener(event)
 {
-    console.log('IV-AV: 1 checkoutListener fired from ' + event.origin);
-    console.log('IV-AV: 2 checkoutListener event ' + event);
-
-	if (event.origin == "https://sandbox.inverite.com"  ||
-		event.origin == "https://i1.inverite.com" ||
-		event.origin == "https://live.inverite.com" ||
-		event.origin == "https://www.inverite.com" ) {
+	if (check_origin(event.origin)) {
 		var data = event.data;
 		if (data.verified == 1) {
 			jQuery('#av-overlay').remove();
@@ -66,39 +60,26 @@ function thankyouListener(event)
 	if (event.origin == "https://sandbox.inverite.com"  ||
 		  event.origin == "https://i1.inverite.com" ||
 		  event.origin == "https://live.inverite.com" ||
-          event.origin == "https://www.inverite-cls1.com" ||
-          event.origin == "https://www.inv-cdn-ca.com" ||
 		  event.origin == "https://www.inverite.com" ) {
-        var data = event.data;
-
-        console.log('IV-AV: thankyouListener fired from ' + event.origin);
-
+		var data = event.data;
 		jQuery('#av-overlay').remove();
 		jQuery('#av-popup').remove();
 
-        if (data.verified == 1) {
-            console.log('IV-AV: Verified');
+		if (data.verified == 1) {
 			var message = '<p><span style="color: green;" class="dashicons dashicons-yes"></span>Thank you for verifying your age!</p>';
 			if (forceShipping || forceBilling) {
 				var description = (forceShipping) ? 'shipping' : 'billing';
 				message = message + '<p>Your ' + description + ' name will be set to: ' + data.firstname + ' ' + data.lastname + '</p>';
 			}
 
-			jQuery('#ageVerifyMessage').html(message);
-
-		    // B+F custom: redirect to identification-approval/
-		    // Need to do this from a profileListener but first fix mode==thankyou bug
-            console.log('IV-AV: 3 - relocate to /identification-approval/ ... ');
-			window.location = '/identification-approval/';
-            /*
+      jQuery('#ageVerifyMessage').html(message);
 			jQuery('form[name=checkout]').prepend('<input type="hidden" name="ivav-similarity" value="' + data.similarity + '" />');
 			jQuery('form[name=checkout]').prepend('<input type="hidden" name="ivav-guid" value="' + data.guid + '" />');
 			jQuery('form[name=checkout]').prepend('<input type="hidden" name="ivav-birthdate" value="' + data.dateofbirth + '" />');
 			jQuery('form[name=checkout]').prepend('<input type="hidden" name="ivav-age" value="' + data.age + '" />');
 			jQuery('form[name=checkout]').prepend('<input type="hidden" name="ivav-status" value="Approved" />');
 			jQuery('form[name=checkout]').prepend('<input type="hidden" name="ivav-firstname" value="' + data.firstname + '" />');
-			jQuery('form[name=checkout]').prepend('<input type="hidden" name="ivav-lastname" value="' + data.lastname + '" />');*/
-
+			jQuery('form[name=checkout]').prepend('<input type="hidden" name="ivav-lastname" value="' + data.lastname + '" />');
     } else {
       console.log('IV-AV: fail on mode ' + mode);
       if (mode == 'profile') {
@@ -136,20 +117,17 @@ function showPopup(url)
 
 function getIframe(url)
 {
-
    if (url == undefined) {
       // Default for old checkout mode
       url = hostname + '/customer/web/create?site=' + siteName + '&referenceid=' + reference + '&username=' + siteName + '_checkout_' + reference + '&email=' + email + '&phone=' + phone;
    }
    var s =
    '<div id="av-overlay" style="width: 100%; min-height: 100%; background-color: #000; opacity: 0.5; left: 0; right: 0; position: fixed; z-index: 111; overflow: hidden;"></div>' +
-   '<div id="av-popup" style="left: 10%; top: 150px; width: 80%; height: 80%; background-color: #FFF; z-index: 200; position:absolute; ">';
+   '<div id="av-popup" style="left: 10%; top: 10%; width: 80%; height: 80%; background-color: #FFF; z-index: 200; position:absolute; ">';
 
    if (mode == 'profile' || siteKey == 'ca15f8bc2637626660651c02bd2f9c17' || siteKey == '5665acdd9a7d7d88cf16ac72bfb3bd65') {
 	   s = s + '<span id="closeWindow" class=" dashicons dashicons-no" style="position: absolute; left: 100%; z-index: 300; background: #fff; width: 20px; height: 20px" onclick="jQuery(\'#av-overlay\').remove(); jQuery(\'#av-popup\').remove();"></span>';
    }
-
-   customerMsg = '';
    s = s + '<div style="margin-left: auto; margin-right: auto; margin-top: 10px;  padding: 5px; font-size: 13px; color: #676a6c; border-style: solid; border-width: 1px; border-color: #ddd; border-radius: 3px; max-width: 1024px;">' + customerMsg + '</div>' +
    '<iframe src="' + url + '" style="top: 10; border:none; margin:0; padding:0; width: 100%; height: 100%;" /></iframe>' +
    '</div>';
@@ -177,7 +155,7 @@ var email         = '';
 var phone         = '';
 var firstName     = '';
 var lastName      = '';
-var hostname      = 'https://www.inverite.com'
+var hostname      = 'https://www.inverite.com';
 if (isDev) {
 	hostname = 'https://i1.inverite.com';
 } else if (isStage) {
@@ -187,25 +165,21 @@ if (isDev) {
 }
 
 jQuery(document).ready(function() {
-    console.log("IV-AV: setup");
-    console.log("IV-AV: mode: " + mode);
-    if (mode == 'checkout') {
-        console.log("IV-AV: registering checkoutListener");
-        if (window.addEventListener) {
-            addEventListener("message", checkoutListener, false)
-        } else {
-            attachEvent("onmessage", checkoutListener)
-        }
+  if (mode == 'checkout') {
+    if (window.addEventListener) {
+      addEventListener("message", checkoutListener, false);
+    } else {
+      attachEvent("onmessage", checkoutListener);
     }
-    else { // (mode == 'thankyou' || mode == 'precheckout' || mode == 'profile') or mode undefined
-        console.log("IV-AV: registering thankyouListener");
-        jQuery('#ageVerifyMessage').insertAfter(jQuery('.woocommerce-thankyou-order-received'));
-        if (window.addEventListener) {
-            addEventListener("message", thankyouListener, false)
-        } else {
-            attachEvent("onmessage", thankyouListener)
-        }
+  }
+  else if (mode == 'thankyou' || mode == 'precheckout' || mode == 'profile') {
+    jQuery('#ageVerifyMessage').insertAfter(jQuery('.woocommerce-thankyou-order-received'));
+    if (window.addEventListener) {
+        addEventListener("message", thankyouListener, false);
+    } else {
+        attachEvent("onmessage", thankyouListener);
     }
+  }
 
 	jQuery(document.body).on('checkout_error', function() {
 		var count = jQuery('.woocommerce-error').find('li').length;
@@ -233,7 +207,7 @@ jQuery(document).ready(function() {
 				catch (e) {
 					console.log('IV-AV: exception=' + e.message);
 				}
-        showPopup();
+                showPopup();
 			}
 		}
 	});

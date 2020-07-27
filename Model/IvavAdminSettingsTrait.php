@@ -22,7 +22,8 @@ trait IvavAdminSettingsTrait {
         $this->thankyouInline           = 'popup';
         $this->placeOrderText           = $this->get_option('overridePlaceOrderText');
         $this->reminderDelay            = $this->get_option('reminderDelay') * 60;
-        $this->templateTheme            = $this->get_option('templateTheme');
+        $this->templateTheme            = apply_filters('ivav_template_theme', $this->get_option('templateTheme'));
+        # filter
 
         $this->requiredFields = [];
         if ($this->get_option('requireSelfie') == 'selfie') {
@@ -44,7 +45,7 @@ trait IvavAdminSettingsTrait {
         if ($this->environment == 'dev')
         {
             $this->isDev = true;
-            $this->hostname = 'https://i1.inverite.com';
+            $this->hostname = 'https://lloyd.inverite.com';
         }
         elseif ($this->environment == 'www' || $this->environment == 'prod')
         {
@@ -103,7 +104,7 @@ trait IvavAdminSettingsTrait {
             );
             // Admin Order Page AgeVerify status
             add_filter('manage_edit-shop_order_columns', array($this, 'ivav_shop_order_columns'));
-            add_filter('manage_shop_order_posts_custom_column', array($this, 'ivav_shop_order_posts_custom_column'), 2);
+            add_filter('manage_shop_order_posts_custom_column', array($this, 'ivav_shop_order_posts_custom_column'), 20, 2);
             add_filter('wc_order_statuses', array($this, 'ivav_hide_order_status'));
 
             add_action('add_meta_boxes', function() {
@@ -155,6 +156,7 @@ trait IvavAdminSettingsTrait {
                 add_action('woocommerce_before_account_orders', array($this, 'ivav_wc_edit_account_form'));
             }
             add_shortcode('ivav_profile', array($this, 'ivav_profile_shortcode'));
+            add_shortcode('ivav_iframe', array($this, 'ivav_iframe_shortcode'));
 
 
             add_action('woocommerce_order_actions', array($this, 'ivav_wc_order_actions'));
@@ -379,8 +381,8 @@ trait IvavAdminSettingsTrait {
 
     public function ivav_plugin_add_settings_link($actions, $file)
     {
-     if ( $file != 'iv-ageverify/iv-ageverify.php')
-         return $actions;
+        if ( $file != 'iv-ageverify/iv-ageverify.php')
+            return $actions;
 
         $settings_link = '<a href="admin.php?page=wc-settings&tab=integration">' . __('Settings') . '</a>';
         array_push($actions, $settings_link);

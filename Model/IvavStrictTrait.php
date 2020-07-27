@@ -55,7 +55,6 @@ trait IvavStrictTrait {
         if ($this->forceName == 'none') {
             return;
         }
-        $this->logger->debug('IV-AV: order_processed_strict');
 
         $order = new WC_Order($orderId);
         $user = wp_get_current_user();
@@ -96,3 +95,4 @@ trait IvavStrictTrait {
         }
     }
 }
+

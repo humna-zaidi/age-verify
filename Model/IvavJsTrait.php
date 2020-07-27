@@ -4,7 +4,7 @@ trait IvavJsTrait
     public function ivav_apply_js_attributes($tag, $handle)
     {
         $pagename = basename(get_permalink());
-        if (!in_array($pagename,array('checkout','thankyou','my-account','upload-identification'))) return $tag;
+        if (!in_array($pagename,array('checkout','thankyou','my-account'))) return $tag;
         if (!preg_match('/js\/av\.js/', $tag)) {
             return $tag;
         }
@@ -55,7 +55,7 @@ trait IvavJsTrait
     {
         $pagename = basename(get_permalink());
 
-        if (!in_array($pagename,array('checkout','thankyou','my-account', 'upload-identification')))
+        if (!in_array($pagename,array('checkout','thankyou','my-account')))
             return;
         if ($pagename == 'my-account' && !is_user_logged_in()) {
             return;
@@ -67,8 +67,9 @@ trait IvavJsTrait
 
     private function ivav_setup_js_internal()
     {
-        $this->logger->error('IV-AV: internal js setup');
         wp_enqueue_style('dashicons');
+        wp_register_script('ivav-origin', 'https://www.inv-cdn-ca.com/origin.js', array('jquery'));
+        wp_enqueue_script('ivav-origin');
         wp_register_script('ivav', plugin_dir_url( __FILE__ ) . '../js/av.js', array('jquery'));
         wp_enqueue_script('ivav');
     }

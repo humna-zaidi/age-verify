@@ -2,7 +2,7 @@
 trait IvavApiTrait {
     public function ivav_api_check ($guid)
     {
-        $r = wp_remote_post($this->hostname . '/api/fetch/' . $guid, array(
+        $r = wp_remote_post($this->hostname . '/api/v2/fetch/' . $guid, array(
             'method' => 'POST',
             'headers' => array('Auth' => $this->apiKey)
         ));
@@ -13,9 +13,6 @@ trait IvavApiTrait {
 
     public function ivav_api_create ($reference, $ip, $type = '', $tmpGuid = '', $data = array())
     {
-#        error_log("IVAV: api-craete ref [ $reference ] , ip [ $ip ], type [ $type ], tmpGuid [ $tmpGuid ] ");
-#        error_log('IVAV backtrace: ' . print_r(debug_backtrace(2),TRUE));
-
         if ($type == '') {
             $type = $this->verificationMode;
         }
@@ -39,28 +36,15 @@ trait IvavApiTrait {
             $body['username'] = $this->siteName . '_' . $type . '_' . $reference;
             //$body['username']    = $this->siteName . '_' . $type . '_' . $reference,
         }
-
-##No longer works as of 2020-04, moved instead to PofileTrait and ThankYouTrait and manually appending to iframe URL there.
-#        error_log('IVAV: template 1: ' . $this->templateTheme);
-#BF-CUSTOM: Set templateTheme.
-### moved        $this->templateTheme = apply_filters('ivav_template_theme', $this->templateTheme);
-#/BF-CUSTOM
-#        error_log('IVAV: template 2: ' . $this->templateTheme);
-
         if ($this->templateTheme != '') {
             $body['template'] = $this->templateTheme;
         }
-        //$this->logger->info("api call");
-        //$this->logger->info(print_r($body,1));
-#        error_log('IV-AV: h: ' . $this->hostname);
-#        error_log('IV-AV: p: ' . print_r($body,1));
-        $r = wp_remote_post($this->hostname . '/api/create', array(
+        $r = wp_remote_post($this->hostname . '/api/v2/create', array(
             'method'  => 'POST',
             'headers' => array('Auth' => $this->apiKey),
             'body'    => $body,
         ));
         $rr = json_decode($r['body'], 1);
-        $this->logger->info('IVAV: api rr: ' . print_r($rr,1));
         if (isset($rr['errors'])) {
             $this->logger->error('IV-AV: api error:');
             $this->logger->error(print_r($rr['errors'], 1));
@@ -82,20 +66,15 @@ trait IvavApiTrait {
         $av->similarity  = $data['similarity'];
         $av->siteName    = $this->siteName;
         $av->age         = $data['calculated_age'];
+        $av->gender      = $data['gender'];
         $av->birthdate   = $data['birthdate'];
         $av->firstName   = $data['firstname'];
         $av->lastName    = $data['lastname'];
-        $av->gender      = $data['gender'];
-        $av->address     = $data['address'];
-        $av->city        = $data['city'];
-        $av->province    = $data['province'];
-        $av->postal    = $data['postal'];
         $av->date        = date('Y-m-d');
 
         $userId = 0;
         $orderId = 0;
 
-#error_log('IV-AV: callback');
         // original checkout mode - can almost be ignored due since it relies on iframe events
         if (is_numeric($av->referenceId)) {
             $orderId = $av->referenceId;
@@ -118,8 +97,6 @@ trait IvavApiTrait {
             }
         } elseif (preg_match('/^'.$this->siteName.'_(?:pre)?profile_(.+)$/', $av->referenceId, $matches)) {
             $userId = $matches[1];
-#error_log('IV-AV: profile - userID: ' . $userId);
-            $orderId = 0;
             if ($av->isDenied() && $av->reason == 'namematch_failure') {
                 $this->logger->info("IV-AV: namematch_failure");
                 $av->guidTmp = '';
@@ -132,8 +109,7 @@ trait IvavApiTrait {
             exit;
         }
 
-error_log('IV-AV: Doing ivav_verification action.  userId: ' . $userId . ' OrderId: ' . $orderId . ' Status: ' . $av->status . ' Reason: ' . $av->reason);
-        do_action('ivav_verification', $userId, $orderId, $av->status, $av->reason, $av);
+        do_action('ivav_verification', $userId, $orderId, $av->status, $av->reason);
 
         exit;
     }
@@ -142,33 +118,27 @@ error_log('IV-AV: Doing ivav_verification action.  userId: ' . $userId . ' Order
     {
         if ($av->isVerified() == true) {
             if ($userId > 0) {
-                $this->logger->debug("IV-AV: override user $userId");
                 $user = new WC_Customer($userId);
                 $user->set_first_name($av->firstName);
                 $user->set_last_name($av->lastName);
                 if ($this->forceName == 'billing' || $this->forceName == 'both') {
-                    $this->logger->info("override billing name {$av->firstName} {$av->lastName}");
                     $user->set_billing_first_name($av->firstName);
                     $user->set_billing_last_name($av->lastName);
                 }
                 if ($this->forceName == 'shipping' || $this->forceName == 'both') {
-                    $this->logger->info("override shipping name {$av->firstName} {$av->lastName}");
                     $user->set_shipping_first_name($av->firstName);
                     $user->set_shipping_last_name($av->lastName);
                 }
 
                 $user->save();
-                $this->logger->debug('IV-AV: done');
             }
         }
     }
 
     private function overrideOrder($av, $order)
     {
-        $this->logger->debug('IV-AV: override order');
         if ($av->isVerified() == true) {
             if ($this->forceName == 'billing' || $this->forceName == 'both') {
-                $this->logger->debug('IV-AV: override order billing');
                 if ($this->ivav_version_check(2.7)) {
                     $order->set_billing_first_name($av->firstName);
                     $order->set_billing_last_name($av->lastName);
@@ -189,8 +159,6 @@ error_log('IV-AV: Doing ivav_verification action.  userId: ' . $userId . ' Order
                 }
             }
             $order->save();
-            $this->logger->debug('IV-AV: done');
-
         }
     }
 }
