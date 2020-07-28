@@ -92,6 +92,24 @@ trait IvavApiTrait {
         $av->postal    = $data['postal'];
         $av->date        = date('Y-m-d');
 
+        if($data['firstname'] == null){
+            $a = str_replace(',', '', $data['lastname']);
+            if (count(explode(' ', $a)) > 1) {
+                $first_last_name = explode(' ', $a);
+                $av->firstName = $first_last_name[0];
+                $av->lastName = $first_last_name[1];
+            }
+        }
+
+        if($data['lastname'] == null){
+            $a = str_replace(',', '', $data['firstname']);
+            if (count(explode(' ', $a)) > 1) {
+                $first_last_name = explode(' ', $a);
+                $av->firstName = $first_last_name[0];
+                $av->lastName = $first_last_name[1];
+            }
+        }
+
         $userId = 0;
         $orderId = 0;
 

@@ -70,7 +70,6 @@ function thankyouListener(event)
           event.origin == "https://www.inv-cdn-ca.com" ||
 		  event.origin == "https://www.inverite.com" ) {
         var data = event.data;
-
         console.log('IV-AV: thankyouListener fired from ' + event.origin);
 
 		jQuery('#av-overlay').remove();
